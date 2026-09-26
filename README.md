@@ -1,24 +1,23 @@
-# Les Pirates de la Route — export du site
+# Les Pirates de la Route — site GitHub Pages
 
-Cet export correspond à la version du site publiée sur :
-https://les-pirates-de-la-route.dumetnicolas.chatgpt.site/
+Le site est prêt à être publié sur GitHub Pages.
 
 ## Fichiers
-- `index.html` : structure du site
+- `index.html` : page principale
 - `styles.css` : design et animations
-- `script.js` : navigation, animations et formulaire
-- `assets/logo-pirates.webp`
-- `assets/convoi-pirate.webp`
-- `assets/equipage-port-pirate.webp`
+- `script.js` : navigation + formulaire
+- `config.js` : URL du service d’envoi
+- `assets/` : images du site
+- `worker/` : Cloudflare Worker qui transmet le formulaire à Discord
 
-## Mettre le site sur GitHub Pages
-1. Créer ou ouvrir un dépôt GitHub.
-2. Envoyer tous les fichiers de ce dossier à la racine du dépôt.
-3. Dans GitHub : Settings > Pages.
-4. Source : Deploy from a branch.
-5. Choisir la branche `main` et le dossier `/ (root)`.
-6. Enregistrer.
+## Activer le bouton « Envoyer »
+1. Dans Discord, crée un webhook dans le salon où tu souhaites recevoir les messages.
+2. Dans Cloudflare Workers, déploie le fichier `worker/worker.js`.
+3. Dans les paramètres du Worker, ajoute un **Secret** nommé `DISCORD_WEBHOOK_URL` contenant l’URL du webhook Discord.
+4. Copie l’URL publique de ton Worker, par ex. `https://pirates-contact.ton-compte.workers.dev`.
+5. Ouvre `config.js` et remplace la chaîne vide de `contactEndpoint` par cette URL.
+6. Publie les fichiers du dossier sur GitHub Pages.
 
-Le formulaire de cette version prépare le message puis le copie dans le presse-papiers afin de le coller dans un ticket Discord, comme sur la version publiée.
+Ne mets jamais l’URL du webhook Discord directement dans `index.html`, `script.js` ou `config.js`.
 
 Discord : https://discord.gg/ZQGTz2RF72

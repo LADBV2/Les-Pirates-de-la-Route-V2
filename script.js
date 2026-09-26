@@ -70,19 +70,38 @@
   form?.addEventListener('submit', async e => {
     e.preventDefault();
     if (!form.reportValidity()) return;
-    const text = compose();
-    preview.textContent = text;
+
+    const endpoint = window.SITE_CONFIG?.contactEndpoint?.trim();
+    const submitButton = form.querySelector('button[type="submit"]');
+    const [name, discord, email, subject, message] = fields.map(el => el?.value.trim() || '');
+
+    if (!endpoint) {
+      status.textContent = 'Envoi non configuré : ajoute l’URL de ton Worker dans config.js.';
+      return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.textContent = 'ENVOI EN COURS…';
+    status.textContent = '';
+
     try {
-      await navigator.clipboard.writeText(text);
-      status.textContent = 'Message copié ! Ouvre Discord et colle-le dans ton ticket.';
-    } catch {
-      const area = document.createElement('textarea');
-      area.value = text;
-      document.body.appendChild(area);
-      area.select();
-      document.execCommand('copy');
-      area.remove();
-      status.textContent = 'Message copié ! Ouvre Discord et colle-le dans ton ticket.';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, discord, email, subject, message})
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Erreur lors de l’envoi');
+
+      status.textContent = 'Message envoyé avec succès à l’équipage !';
+      form.reset();
+      preview.textContent = 'Ton message a bien été envoyé. Merci !';
+    } catch (err) {
+      status.textContent = `Impossible d’envoyer le message : ${err.message || 'réessaie plus tard'}.`;
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = 'ENVOYER →';
     }
   });
 })();
