@@ -1,5 +1,3 @@
-// URL publique de ton Cloudflare Worker.
-// Exemple : https://pirates-contact.ton-compte.workers.dev
-window.SITE_CONFIG = {
-  contactEndpoint: ""
-};
+// Adresse publique du relais Cloudflare Worker, jamais l'adresse du webhook Discord.
+// Exemple après déploiement : https://pirates-contact.votre-compte.workers.dev/contact
+window.PIRATES_CONFIG = { contactEndpoint: "" };
