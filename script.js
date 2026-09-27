@@ -1,111 +1,107 @@
 (() => {
-  const root = document.documentElement;
-  root.classList.add('has-js');
-  const header = document.querySelector('.header');
-  const menu = document.querySelector('.menu-toggle');
-  const nav = document.querySelector('#navigation');
-  const motionButton = document.querySelector('.motion-control');
-  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let playing = !motionPreference.matches;
-  let explicitMotionChoice = false;
-  function setMotion(enabled) {
-    playing = enabled;
-    root.classList.toggle('motion-paused', !playing);
-    motionButton.setAttribute('aria-pressed', String(playing));
-    motionButton.querySelector('.motion-icon').textContent = playing ? 'Ⅱ' : '▶';
-    motionButton.querySelector('.motion-label').textContent = playing ? 'Mettre les animations en pause' : 'Activer les animations';
-    updateScroll();
-  }
-  function closeMenu() {
-    nav.classList.remove('open');
-    menu.setAttribute('aria-expanded', 'false');
-    menu.setAttribute('aria-label', 'Ouvrir le menu');
-    document.body.classList.remove('menu-open');
-  }
-  menu.addEventListener('click', () => {
-    const open = !nav.classList.contains('open');
-    nav.classList.toggle('open', open);
-    menu.setAttribute('aria-expanded', String(open));
-    menu.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
-    document.body.classList.toggle('menu-open', open);
-  });
-  nav.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMenu));
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeMenu(); menu.focus(); } });
-  motionButton.addEventListener('click', () => { explicitMotionChoice = true; setMotion(!playing); });
-  motionPreference.addEventListener('change', event => { if (!explicitMotionChoice) setMotion(!event.matches); });
-  const parallax = [...document.querySelectorAll('[data-parallax]')];
-  const sections = [...document.querySelectorAll('section[id]')];
-  let queued = false;
-  function updateScroll() {
-    queued = false;
-    const y = window.scrollY;
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    header.style.setProperty('--progress', max > 0 ? String(Math.min(1, y / max)) : '0');
-    header.classList.toggle('scrolled', y > 35);
-    if (playing) {
-      parallax.forEach(element => {
-        const rect = element.parentElement.getBoundingClientRect();
-        if (rect.bottom > 0 && rect.top < window.innerHeight) {
-          const offset = Math.max(-100, Math.min(100, -rect.top * Number(element.dataset.parallax)));
-          element.style.transform = `translate3d(0,${offset}px,0)`;
-        }
-      });
-    }
-    let current = sections[0].id;
-    sections.forEach(section => { if (section.getBoundingClientRect().top < window.innerHeight * .4) current = section.id; });
-    nav.querySelectorAll('a').forEach(link => {
-      const active = link.hash === '#' + current;
-      link.classList.toggle('active', active);
-      if (active) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current');
-    });
-  }
-  const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(updateScroll); } };
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', () => { if (window.innerWidth > 760) closeMenu(); onScroll(); });
-  if ('IntersectionObserver' in window) {
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); } });
-    }, { threshold: .08, rootMargin: '0px 0px -25px 0px' });
-    document.querySelectorAll('.reveal').forEach(element => observer.observe(element));
-  } else document.querySelectorAll('.reveal').forEach(element => element.classList.add('visible'));
-  setMotion(playing);
-})();
+  const progress = document.getElementById('scrollProgress');
+  const menuButton = document.getElementById('menuButton');
+  const nav = document.getElementById('mainNav');
+  const navLinks = [...nav.querySelectorAll('a')];
+  const sections = [...document.querySelectorAll('main section[id]')];
+  const motionToggle = document.getElementById('motionToggle');
+  const form = document.getElementById('contactForm');
+  const preview = document.getElementById('messagePreview');
+  const status = document.getElementById('formStatus');
 
-// Envoi au relais serveur. Le webhook Discord n'est jamais inclus dans le navigateur.
-(() => {
-  const form = document.getElementById('contact-form');
-  if (!form) return;
-  let sending = false;
-  form.addEventListener('submit', async event => {
-    event.preventDefault();
-    if (sending) return;
-    const status = document.getElementById('contact-status');
-    const endpoint = window.PIRATES_CONFIG?.contactEndpoint?.trim();
+  const onScroll = () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    progress.style.width = `${max > 0 ? (scrollY / max) * 100 : 0}%`;
+    let current = 'accueil';
+    for (const section of sections) {
+      if (scrollY >= section.offsetTop - 180) current = section.id;
+    }
+    navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === `#${current}`));
+  };
+  addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  menuButton?.addEventListener('click', () => {
+    const open = nav.classList.toggle('open');
+    menuButton.setAttribute('aria-expanded', String(open));
+    menuButton.textContent = open ? '×' : '☰';
+  });
+  navLinks.forEach(a => a.addEventListener('click', () => {
+    nav.classList.remove('open');
+    menuButton.setAttribute('aria-expanded','false');
+    menuButton.textContent = '☰';
+  }));
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  motionToggle?.addEventListener('click', () => {
+    const paused = document.body.classList.toggle('motion-paused');
+    motionToggle.setAttribute('aria-pressed', String(paused));
+    motionToggle.innerHTML = paused ? '<span>▶</span> Reprendre les animations' : '<span>Ⅱ</span> Mettre les animations en pause';
+  });
+
+  const fields = ['name','discord','email','subject','message'].map(id => document.getElementById(id));
+  const compose = () => {
+    const [name, discord, email, subject, message] = fields.map(el => el?.value.trim() || '');
+    return [
+      '🏴‍☠️ **MESSAGE DU SITE — LES PIRATES DE LA ROUTE**',
+      '',
+      `**Nom / pseudo :** ${name || '—'}`,
+      `**Pseudo Discord :** ${discord || '—'}`,
+      `**Adresse email :** ${email || 'Non renseignée'}`,
+      `**Sujet :** ${subject || '—'}`,
+      '',
+      '**Message :**',
+      message || '—'
+    ].join('\n');
+  };
+  const updatePreview = () => preview.textContent = compose();
+  fields.forEach(el => el?.addEventListener('input', updatePreview));
+  fields.forEach(el => el?.addEventListener('change', updatePreview));
+
+  form?.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!form.reportValidity()) return;
+
+    const endpoint = window.SITE_CONFIG?.contactEndpoint?.trim();
+    const submitButton = form.querySelector('button[type="submit"]');
+    const [name, discord, email, subject, message] = fields.map(el => el?.value.trim() || '');
+
     if (!endpoint) {
-      status.textContent = 'L’envoi du formulaire est en cours de configuration. Contacte-nous sur Discord en attendant.';
+      status.textContent = 'Envoi non configuré : ajoute l’URL de ton Worker dans config.js.';
       return;
     }
-    const button = form.querySelector('button[type="submit"]');
-    const data = Object.fromEntries(new FormData(form));
-    sending = true;
-    button.disabled = true;
-    button.textContent = 'ENVOI EN COURS…';
+
+    submitButton.disabled = true;
+    submitButton.textContent = 'ENVOI EN COURS…';
     status.textContent = '';
+
     try {
       const response = await fetch(endpoint, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data), signal: AbortSignal.timeout(20000)
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, discord, email, subject, message})
       });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || result.ok !== true) throw new Error(result.error || 'L’envoi a échoué. Réessaie ou contacte-nous sur Discord.');
-      status.textContent = 'Ton message a bien été envoyé à l’équipage sur Discord.';
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Erreur lors de l’envoi');
+
+      status.textContent = 'Message envoyé avec succès à l’équipage !';
       form.reset();
-    } catch (error) {
-      status.textContent = error.name === 'TimeoutError' ? 'Le délai de réponse a été dépassé. Vérifie auprès de l’équipage avant de réessayer.' : (error.message === 'Failed to fetch' ? 'Connexion impossible. Réessaie plus tard ou contacte-nous sur Discord.' : error.message);
+      preview.textContent = 'Ton message a bien été envoyé. Merci !';
+    } catch (err) {
+      status.textContent = `Impossible d’envoyer le message : ${err.message || 'réessaie plus tard'}.`;
     } finally {
-      sending = false;
-      button.disabled = false;
-      button.textContent = 'ENVOYER';
+      submitButton.disabled = false;
+      submitButton.textContent = 'ENVOYER →';
     }
   });
 })();
