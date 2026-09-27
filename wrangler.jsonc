@@ -1,0 +1,8 @@
+{
+  "name": "pirates-contact",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-01",
+  "vars": {
+    "ALLOWED_ORIGINS": "https://les-pirates-de-la-route.dumetnicolas.chatgpt.site,https://ladb250726.github.io"
+  }
+}

@@ -1,0 +1,2 @@
+# Pour les essais locaux uniquement. Copier vers .dev.vars et renseigner le secret.
+DISCORD_WEBHOOK_URL=""
